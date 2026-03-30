@@ -2,16 +2,20 @@
   var canvas = document.getElementById('game');
   var ctx = canvas.getContext('2d');
   var dpr = window.devicePixelRatio || 1;
+  var W, H;
   var particles = [];
   var sessionStart = Date.now();
   var GAME_NAME = 'tap-react';
 
   // Size canvas to viewport
   function resize() {
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = window.innerHeight * dpr;
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   window.addEventListener('resize', resize);
   resize();
@@ -147,7 +151,7 @@
   function gameLoop() {
     // Semi-transparent clear for trail effect
     ctx.fillStyle = 'rgba(26, 26, 46, 0.15)';
-    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+    ctx.fillRect(0, 0, W, H);
 
     // Update and draw particles
     for (var i = particles.length - 1; i >= 0; i--) {

@@ -24,6 +24,12 @@
 - Navigation uses `window.location.replace()` — no browser back history
 - Every tap must produce visual + audio feedback (no "wrong" answers)
 
+## Git Workflow
+- **NEVER commit or push directly to `main` without explicit user approval.**
+- Always work on the `dev` branch (or a feature branch off `dev`).
+- When work is ready, merge `dev` → `main` **only after user approval**.
+- Flow: feature branch → `dev` → (approval) → `main`
+
 ## Deployment
 - Push to `main` → Vercel auto-deploys to `juliagames.vercel.app`
 - Bump `CACHE_NAME` in `sw.js` on every deploy

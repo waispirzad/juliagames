@@ -31,24 +31,22 @@ function ensureFullscreen() {
 // Listen for fullscreen changes
 document.addEventListener('fullscreenchange', function() {
   isFullscreen = !!document.fullscreenElement;
-  if (!isFullscreen) fullscreenAttempted = false; // allow re-attempt
 });
 document.addEventListener('webkitfullscreenchange', function() {
   isFullscreen = !!(document.webkitFullscreenElement || document.fullscreenElement);
-  if (!isFullscreen) fullscreenAttempted = false;
 });
 
-// On game pages: re-enter fullscreen on first touch
-// This fires before individual game touch handlers
+// On game pages: enter fullscreen once on first touch, then stop trying.
+// Don't re-attempt after user exits fullscreen (avoids jarring layout shifts).
 document.addEventListener('touchstart', function() {
   initAudio();
   ensureFullscreen();
-}, { once: false, passive: true });
+}, { once: true, passive: true });
 
 document.addEventListener('click', function() {
   initAudio();
   ensureFullscreen();
-}, { once: false, passive: true });
+}, { once: true });
 
 // Show the game hub, hide the start screen
 function startPlaying() {
