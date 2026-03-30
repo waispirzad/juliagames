@@ -1,254 +1,195 @@
 (function() {
-  var canvas = document.getElementById('game');
-  var ctx = canvas.getContext('2d');
-  var dpr = window.devicePixelRatio || 1;
-  var W, H;
-  var bubbles = [];
-  var sparkles = [];
-  var sessionStart = Date.now();
   var GAME_NAME = 'pop-bubbles';
+  var MAX_BUBBLES = 15;
+  var SPAWN_MIN = 800;
+  var SPAWN_MAX = 1500;
 
-  function resize() {
-    W = window.innerWidth;
-    H = window.innerHeight;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
-    canvas.style.width = W + 'px';
-    canvas.style.height = H + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  window.addEventListener('resize', resize);
-  resize();
-
-  var touch = initTouch(canvas);
-  initTracker();
-  trackEvent(GAME_NAME, 'session_start');
-  setupBackButton(document.getElementById('back-btn'));
-
-  // Bubble
-  function Bubble() {
+  // --- Bubble ---
+  function Bubble(W, H, placeOnScreen) {
     this.radius = randomBetween(40, 70);
     this.x = randomBetween(this.radius + 10, W - this.radius - 10);
-    this.y = H + this.radius;
+    this.y = placeOnScreen ? randomBetween(H * 0.2, H * 0.8) : H + this.radius;
     this.vy = randomBetween(-1.2, -0.4);
     this.wobbleSpeed = randomBetween(0.015, 0.04);
-    this.wobbleAmount = randomBetween(0.8, 2.5);
-    this.wobbleOffset = Math.random() * Math.PI * 2;
+    this.wobbleAmp = randomBetween(0.8, 2.5);
+    this.wobblePhase = Math.random() * Math.PI * 2;
+    this.baseX = this.x;
     this.color = randomColor();
-    this.popped = false;
-    this.popProgress = 0;
+    this.colorInt = Phaser.Display.Color.HexStringToColor(this.color).color;
     this.time = 0;
   }
 
   Bubble.prototype.update = function() {
-    if (this.popped) {
-      this.popProgress += 0.04;
-      return;
-    }
     this.time++;
     this.y += this.vy;
-    this.x += Math.sin(this.time * this.wobbleSpeed + this.wobbleOffset) * this.wobbleAmount;
+    this.x = this.baseX + Math.sin(this.time * this.wobbleSpeed + this.wobblePhase) * this.wobbleAmp;
   };
 
-  Bubble.prototype.draw = function(ctx) {
-    if (this.popped) {
-      // Pop animation: expanding ring + particles
-      var scale = 1 + this.popProgress * 2.5;
-      var alpha = 1 - this.popProgress;
-      ctx.save();
-      ctx.globalAlpha = alpha;
-
-      // Expanding ring
-      ctx.strokeStyle = this.color;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.radius * scale, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Flying particles
-      for (var i = 0; i < 8; i++) {
-        var angle = (i / 8) * Math.PI * 2;
-        var dist = this.radius * scale * 1.3;
-        var pSize = Math.max(0, 5 * (1 - this.popProgress));
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(
-          this.x + Math.cos(angle) * dist,
-          this.y + Math.sin(angle) * dist,
-          pSize, 0, Math.PI * 2
-        );
-        ctx.fill();
-      }
-      ctx.restore();
-      return;
-    }
-
-    // Draw bubble with gradient
-    ctx.save();
-    var grad = ctx.createRadialGradient(
-      this.x - this.radius * 0.3, this.y - this.radius * 0.3, this.radius * 0.1,
-      this.x, this.y, this.radius
-    );
-    grad.addColorStop(0, 'rgba(255,255,255,0.7)');
-    grad.addColorStop(0.4, this.color);
-    grad.addColorStop(1, this.color + '88');
-
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Small highlight
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.beginPath();
-    ctx.ellipse(
-      this.x - this.radius * 0.25,
-      this.y - this.radius * 0.3,
-      this.radius * 0.2,
-      this.radius * 0.12,
-      -0.5, 0, Math.PI * 2
-    );
-    ctx.fill();
-    ctx.restore();
-  };
-
-  Bubble.prototype.containsPoint = function(px, py) {
-    var dx = px - this.x;
-    var dy = py - this.y;
+  Bubble.prototype.hits = function(px, py) {
+    var dx = px - this.x, dy = py - this.y;
     return dx * dx + dy * dy <= this.radius * this.radius;
   };
 
-  // Mini sparkle for missed taps
+  Bubble.prototype.draw = function(gfx) {
+    var r = this.radius;
+    gfx.fillStyle(this.colorInt, 0.7);
+    gfx.fillCircle(this.x, this.y, r);
+    gfx.fillStyle(0xffffff, 0.15);
+    gfx.fillCircle(this.x - r * 0.15, this.y - r * 0.15, r * 0.7);
+    gfx.fillStyle(0xffffff, 0.4);
+    gfx.fillEllipse(this.x - r * 0.25, this.y - r * 0.3, r * 0.4, r * 0.24);
+    gfx.lineStyle(2, this.colorInt, 0.3);
+    gfx.strokeCircle(this.x, this.y, r);
+  };
+
+  // --- Pop effect ---
+  function PopEffect(bubble) {
+    this.x = bubble.x;
+    this.y = bubble.y;
+    this.radius = bubble.radius;
+    this.colorInt = bubble.colorInt;
+    this.t = 0;
+  }
+
+  PopEffect.prototype.update = function() { this.t += 0.04; };
+  PopEffect.prototype.done = function() { return this.t >= 1; };
+
+  PopEffect.prototype.draw = function(gfx) {
+    var scale = 1 + this.t * 2.5;
+    var alpha = 1 - this.t;
+    gfx.lineStyle(3, this.colorInt, alpha);
+    gfx.strokeCircle(this.x, this.y, this.radius * scale);
+    var size = Math.max(0, 5 * (1 - this.t));
+    gfx.fillStyle(this.colorInt, alpha);
+    for (var i = 0; i < 8; i++) {
+      var angle = (i / 8) * Math.PI * 2;
+      var dist = this.radius * scale * 1.3;
+      gfx.fillCircle(
+        this.x + Math.cos(angle) * dist,
+        this.y + Math.sin(angle) * dist,
+        size
+      );
+    }
+  };
+
+  // --- Sparkle (miss feedback) ---
   function Sparkle(x, y) {
     this.x = x;
     this.y = y;
     this.life = 1;
-    this.color = randomColor();
+    this.colorInt = Phaser.Display.Color.HexStringToColor(randomColor()).color;
     this.size = randomBetween(3, 8);
   }
 
-  Sparkle.prototype.update = function() {
-    this.life -= 0.04;
-    this.size *= 0.97;
-  };
+  Sparkle.prototype.update = function() { this.life -= 0.04; this.size *= 0.97; };
+  Sparkle.prototype.done = function() { return this.life <= 0; };
 
-  Sparkle.prototype.draw = function(ctx) {
-    ctx.save();
-    ctx.globalAlpha = this.life;
-    ctx.fillStyle = this.color;
+  Sparkle.prototype.draw = function(gfx) {
+    gfx.fillStyle(this.colorInt, this.life);
     for (var i = 0; i < 6; i++) {
       var angle = (i / 6) * Math.PI * 2;
       var dist = 15 * (1 - this.life) + 5;
-      ctx.beginPath();
-      ctx.arc(
+      gfx.fillCircle(
         this.x + Math.cos(angle) * dist,
         this.y + Math.sin(angle) * dist,
-        Math.max(0, this.size), 0, Math.PI * 2
+        Math.max(0, this.size)
       );
-      ctx.fill();
     }
-    ctx.restore();
   };
 
-  // Spawn bubbles periodically
-  var lastSpawn = 0;
-  var spawnInterval = 1200;
+  // --- Scene ---
+  var PopBubblesScene = new Phaser.Class({
+    Extends: Phaser.Scene,
+    initialize: function() {
+      Phaser.Scene.call(this, { key: 'PopBubblesScene' });
+    },
 
-  function maybeSpawnBubble(now) {
-    if (now - lastSpawn > spawnInterval && bubbles.length < 15) {
-      bubbles.push(new Bubble());
-      lastSpawn = now;
-      spawnInterval = randomBetween(800, 1500);
-    }
-  }
+    create: function() {
+      var self = this;
+      this.bubbles = [];
+      this.pops = [];
+      this.sparkles = [];
+      this.gfx = this.add.graphics();
 
-  // Touch handler
-  function handleTap(px, py) {
-    initAudio();
-    var hit = false;
-
-    // Check from top (last drawn) to bottom
-    for (var i = bubbles.length - 1; i >= 0; i--) {
-      if (!bubbles[i].popped && bubbles[i].containsPoint(px, py)) {
-        bubbles[i].popped = true;
-        playPop();
-        hit = true;
-        trackEvent(GAME_NAME, 'hit', {
-          x: px / W,
-          y: py / H,
-          target: 'bubble',
-        });
-        break;
+      var W = this.scale.width, H = this.scale.height;
+      for (var i = 0; i < 5; i++) {
+        this.bubbles.push(new Bubble(W, H, true));
       }
-    }
 
-    if (!hit) {
-      // Missed — still give positive feedback
-      sparkles.push(new Sparkle(px, py));
-      playSparkle();
-      trackEvent(GAME_NAME, 'miss', { x: px / W, y: py / H });
-    }
-  }
+      this.spawnTimer = this.time.addEvent({
+        delay: 1200,
+        loop: true,
+        callback: function() {
+          if (self.bubbles.length < MAX_BUBBLES) {
+            self.bubbles.push(new Bubble(self.scale.width, self.scale.height, false));
+          }
+          self.spawnTimer.delay = randomBetween(SPAWN_MIN, SPAWN_MAX);
+        },
+      });
 
-  canvas.addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    for (var i = 0; i < e.changedTouches.length; i++) {
-      var pos = touch.getTouchPos(e.changedTouches[i]);
-      handleTap(pos.x / dpr, pos.y / dpr);
-    }
+      this.input.on('pointerdown', function(pointer) {
+        initAudio();
+        var hit = false;
+
+        for (var i = self.bubbles.length - 1; i >= 0; i--) {
+          if (self.bubbles[i].hits(pointer.x, pointer.y)) {
+            self.pops.push(new PopEffect(self.bubbles[i]));
+            self.bubbles.splice(i, 1);
+            playPop();
+            hit = true;
+            trackEvent(GAME_NAME, 'hit', {
+              x: pointer.x / self.scale.width,
+              y: pointer.y / self.scale.height,
+              target: 'bubble',
+            });
+            break;
+          }
+        }
+
+        if (!hit) {
+          self.sparkles.push(new Sparkle(pointer.x, pointer.y));
+          playSparkle();
+          trackEvent(GAME_NAME, 'miss', {
+            x: pointer.x / self.scale.width,
+            y: pointer.y / self.scale.height,
+          });
+        }
+      });
+
+      initGameSession(GAME_NAME);
+      setupBackButton();
+      preventBrowserGestures();
+    },
+
+    update: function() {
+      var gfx = this.gfx;
+      gfx.clear();
+
+      for (var i = this.bubbles.length - 1; i >= 0; i--) {
+        var b = this.bubbles[i];
+        b.update();
+        if (b.y < -b.radius) {
+          this.bubbles.splice(i, 1);
+        } else {
+          b.draw(gfx);
+        }
+      }
+
+      for (var i = this.pops.length - 1; i >= 0; i--) {
+        var p = this.pops[i];
+        p.update();
+        if (p.done()) { this.pops.splice(i, 1); }
+        else { p.draw(gfx); }
+      }
+
+      for (var i = this.sparkles.length - 1; i >= 0; i--) {
+        var s = this.sparkles[i];
+        s.update();
+        if (s.done()) { this.sparkles.splice(i, 1); }
+        else { s.draw(gfx); }
+      }
+    },
   });
 
-  canvas.addEventListener('click', function(e) {
-    var rect = canvas.getBoundingClientRect();
-    handleTap(e.clientX - rect.left, e.clientY - rect.top);
-  });
-
-  // Spawn initial bubbles
-  for (var b = 0; b < 5; b++) {
-    var bubble = new Bubble();
-    bubble.y = randomBetween(H * 0.2, H * 0.8);
-    bubbles.push(bubble);
-  }
-
-  // Game loop
-  function gameLoop() {
-    var now = Date.now();
-
-    // Clear
-    ctx.fillStyle = '#1a1a2e';
-    ctx.fillRect(0, 0, W, H);
-
-    maybeSpawnBubble(now);
-
-    // Update and draw bubbles
-    for (var i = bubbles.length - 1; i >= 0; i--) {
-      bubbles[i].update();
-      bubbles[i].draw(ctx);
-
-      // Remove if floated off top or pop animation done
-      if (bubbles[i].y < -bubbles[i].radius || bubbles[i].popProgress >= 1) {
-        bubbles.splice(i, 1);
-      }
-    }
-
-    // Update and draw sparkles
-    for (var j = sparkles.length - 1; j >= 0; j--) {
-      sparkles[j].update();
-      sparkles[j].draw(ctx);
-      if (sparkles[j].life <= 0) {
-        sparkles.splice(j, 1);
-      }
-    }
-
-    requestAnimationFrame(gameLoop);
-  }
-
-  gameLoop();
-
-  // Track session end
-  document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'hidden') {
-      endSession(GAME_NAME, Date.now() - sessionStart);
-    }
-  });
+  new Phaser.Game(createPhaserConfig(PopBubblesScene));
 })();

@@ -1,29 +1,21 @@
-var CACHE_NAME = 'julia-games-v2';
+var CACHE_NAME = 'julia-games-v4';
 var ASSETS = [
   './',
   './index.html',
   './css/main.css',
   './js/app.js',
   './js/audio.js',
-  './js/touch.js',
   './js/tracker.js',
   './js/utils.js',
-  './games/tap-react/index.html',
-  './games/tap-react/game.js',
+  './js/phaser.min.js',
+  './js/phaser-config.js',
   './games/pop-bubbles/index.html',
   './games/pop-bubbles/game.js',
-  './games/animal-sounds/index.html',
-  './games/animal-sounds/game.js',
   './manifest.json',
   './assets/icons/favicon-196.png',
   './assets/icons/apple-icon-180.png',
   './assets/icons/manifest-icon-192.maskable.png',
   './assets/icons/manifest-icon-512.maskable.png',
-  './assets/sounds/chicken.mp3',
-  './assets/sounds/cow.mp3',
-  './assets/sounds/horse.mp3',
-  './assets/sounds/pig.mp3',
-  './assets/sounds/sheep.mp3',
 ];
 
 self.addEventListener('install', function(e) {
@@ -48,9 +40,7 @@ self.addEventListener('activate', function(e) {
 });
 
 self.addEventListener('fetch', function(e) {
-  // Don't cache Supabase API calls
   if (e.request.url.includes('supabase.co')) return;
-
   e.respondWith(
     caches.match(e.request).then(function(cached) {
       return cached || fetch(e.request);
