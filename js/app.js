@@ -1,83 +1,57 @@
-// Register service worker (use absolute path so it works from any page)
+// Service worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
 }
 
-// Fullscreen management
-var isFullscreen = false;
-
+// Fullscreen
 function enterFullscreen() {
   var el = document.documentElement;
   var rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
   if (rfs) {
-    try {
-      var promise = rfs.call(el);
-      if (promise && promise.then) {
-        promise.then(function() { isFullscreen = true; }).catch(function() {});
-      }
-    } catch (e) {}
+    try { rfs.call(el); } catch (e) {}
   }
 }
 
-// Re-enter fullscreen on first touch (needed after page navigation)
-var fullscreenAttempted = false;
-function ensureFullscreen() {
-  if (!fullscreenAttempted) {
-    fullscreenAttempted = true;
-    enterFullscreen();
-  }
-}
-
-// Listen for fullscreen changes
-document.addEventListener('fullscreenchange', function() {
-  isFullscreen = !!document.fullscreenElement;
-});
-document.addEventListener('webkitfullscreenchange', function() {
-  isFullscreen = !!(document.webkitFullscreenElement || document.fullscreenElement);
-});
-
-// On game pages: enter fullscreen once on first touch, then stop trying.
-// Don't re-attempt after user exits fullscreen (avoids jarring layout shifts).
-document.addEventListener('touchstart', function() {
-  initAudio();
-  ensureFullscreen();
-}, { once: true, passive: true });
-
-document.addEventListener('click', function() {
-  initAudio();
-  ensureFullscreen();
-}, { once: true });
-
-// Show the game hub, hide the start screen
+// Start Playing → fullscreen + show hub
 function startPlaying() {
   initAudio();
   enterFullscreen();
-
-  var startScreen = document.getElementById('start-screen');
-  var hub = document.getElementById('hub');
-  if (startScreen) startScreen.style.display = 'none';
-  if (hub) hub.style.display = 'flex';
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('hub').style.display = 'flex';
 }
 
-// Navigate to a game (replace — no back history)
-function goToGame(path) {
-  window.location.replace(path);
+// Open game in iframe (preserves fullscreen)
+function openGame(path) {
+  document.getElementById('hub').style.display = 'none';
+  var frame = document.getElementById('game-frame');
+  frame.src = path;
+  frame.style.display = 'block';
 }
 
-// Parent-only back button (double-tap within 500ms)
-function setupBackButton(btn) {
-  if (!btn) return;
-  var lastTap = 0;
+// Close game, return to hub
+function closeGame() {
+  var frame = document.getElementById('game-frame');
+  frame.style.display = 'none';
+  frame.src = '';
+  document.getElementById('hub').style.display = 'flex';
+}
 
-  function handleBack(e) {
-    e.preventDefault();
-    var now = Date.now();
-    if (now - lastTap < 500) {
-      window.location.replace('/');
+// Wire up buttons
+document.addEventListener('DOMContentLoaded', function() {
+  var playBtn = document.getElementById('btn-play');
+  if (playBtn) playBtn.addEventListener('click', startPlaying);
+
+  var card = document.getElementById('card-bubbles');
+  if (card) card.addEventListener('click', function() { openGame('./games/pop-bubbles/'); });
+});
+
+// Escape key closes game from hub page
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var frame = document.getElementById('game-frame');
+    if (frame && frame.style.display === 'block') {
+      e.preventDefault();
+      closeGame();
     }
-    lastTap = now;
   }
-
-  btn.addEventListener('touchstart', handleBack);
-  btn.addEventListener('click', handleBack);
-}
+});
