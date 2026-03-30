@@ -1,4 +1,4 @@
-var CACHE_NAME = 'julia-games-v1';
+var CACHE_NAME = 'julia-games-v2';
 var ASSETS = [
   './',
   './index.html',

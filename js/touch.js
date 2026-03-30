@@ -1,11 +1,15 @@
+function preventDefaults(e) {
+  if (e.cancelable) e.preventDefault();
+}
+
 function initTouch(canvas) {
   // Prevent scrolling, zooming, pull-to-refresh
-  document.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
-  document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
-  document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
-  document.addEventListener('gestureend', function(e) { e.preventDefault(); });
-  document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-  document.addEventListener('dblclick', function(e) { e.preventDefault(); });
+  document.addEventListener('touchmove', preventDefaults, { passive: false });
+  document.addEventListener('gesturestart', preventDefaults);
+  document.addEventListener('gesturechange', preventDefaults);
+  document.addEventListener('gestureend', preventDefaults);
+  document.addEventListener('contextmenu', preventDefaults);
+  document.addEventListener('dblclick', preventDefaults);
 
   function getTouchPos(touch) {
     var rect = canvas.getBoundingClientRect();
@@ -20,10 +24,10 @@ function initTouch(canvas) {
 
 // For DOM-based games (no canvas), just prevent gestures
 function initTouchDOM() {
-  document.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
-  document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
-  document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
-  document.addEventListener('gestureend', function(e) { e.preventDefault(); });
-  document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-  document.addEventListener('dblclick', function(e) { e.preventDefault(); });
+  document.addEventListener('touchmove', preventDefaults, { passive: false });
+  document.addEventListener('gesturestart', preventDefaults);
+  document.addEventListener('gesturechange', preventDefaults);
+  document.addEventListener('gestureend', preventDefaults);
+  document.addEventListener('contextmenu', preventDefaults);
+  document.addEventListener('dblclick', preventDefaults);
 }

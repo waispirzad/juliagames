@@ -3,19 +3,52 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
 }
 
-// Fullscreen entry — required for immersive tablet experience
+// Fullscreen management
+var isFullscreen = false;
+
 function enterFullscreen() {
   var el = document.documentElement;
   var rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
   if (rfs) {
     try {
       var promise = rfs.call(el);
-      if (promise && promise.catch) promise.catch(function() {});
-    } catch (e) {
-      // Fullscreen not available — continue without it
-    }
+      if (promise && promise.then) {
+        promise.then(function() { isFullscreen = true; }).catch(function() {});
+      }
+    } catch (e) {}
   }
 }
+
+// Re-enter fullscreen on first touch (needed after page navigation)
+var fullscreenAttempted = false;
+function ensureFullscreen() {
+  if (!fullscreenAttempted) {
+    fullscreenAttempted = true;
+    enterFullscreen();
+  }
+}
+
+// Listen for fullscreen changes
+document.addEventListener('fullscreenchange', function() {
+  isFullscreen = !!document.fullscreenElement;
+  if (!isFullscreen) fullscreenAttempted = false; // allow re-attempt
+});
+document.addEventListener('webkitfullscreenchange', function() {
+  isFullscreen = !!(document.webkitFullscreenElement || document.fullscreenElement);
+  if (!isFullscreen) fullscreenAttempted = false;
+});
+
+// On game pages: re-enter fullscreen on first touch
+// This fires before individual game touch handlers
+document.addEventListener('touchstart', function() {
+  initAudio();
+  ensureFullscreen();
+}, { once: false, passive: true });
+
+document.addEventListener('click', function() {
+  initAudio();
+  ensureFullscreen();
+}, { once: false, passive: true });
 
 // Show the game hub, hide the start screen
 function startPlaying() {

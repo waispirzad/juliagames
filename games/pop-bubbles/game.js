@@ -69,7 +69,7 @@
       for (var i = 0; i < 8; i++) {
         var angle = (i / 8) * Math.PI * 2;
         var dist = this.radius * scale * 1.3;
-        var pSize = 5 * (1 - this.popProgress);
+        var pSize = Math.max(0, 5 * (1 - this.popProgress));
         ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(
@@ -143,7 +143,7 @@
       ctx.arc(
         this.x + Math.cos(angle) * dist,
         this.y + Math.sin(angle) * dist,
-        this.size, 0, Math.PI * 2
+        Math.max(0, this.size), 0, Math.PI * 2
       );
       ctx.fill();
     }
