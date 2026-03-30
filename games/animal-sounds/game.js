@@ -23,7 +23,7 @@
 
   function playAnimalSound(animal) {
     // Try loaded MP3 first, fall back to synthetic
-    if (soundsLoaded && soundBuffers[animal]) {
+    if (soundBuffers[animal]) {
       playSound(animal);
     } else {
       var tone = animalTones[animal];
@@ -37,19 +37,21 @@
     }
   }
 
-  // Try loading real sound files
+  // Only load sounds that actually exist as MP3 files
+  var availableMp3s = ['cow', 'sheep', 'horse', 'pig', 'chicken'];
+  var loadAttempted = false;
+
   function tryLoadSounds() {
-    var animals = ['cow', 'cat', 'dog', 'duck', 'sheep', 'horse', 'pig', 'chicken'];
+    if (loadAttempted) return;
+    loadAttempted = true;
     var loaded = 0;
-    animals.forEach(function(animal) {
+    availableMp3s.forEach(function(animal) {
       loadSound(animal, '../../assets/sounds/' + animal + '.mp3')
         .then(function() {
           loaded++;
-          if (loaded === animals.length) soundsLoaded = true;
+          if (loaded === availableMp3s.length) soundsLoaded = true;
         })
-        .catch(function() {
-          // MP3 not found — synthetic fallback will be used
-        });
+        .catch(function() {});
     });
   }
 
