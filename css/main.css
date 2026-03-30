@@ -1,0 +1,191 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #1a1a2e;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
+
+body {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+           env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  touch-action: none;
+}
+
+/* Game Hub */
+.hub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  padding: 24px;
+}
+
+.hub-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 32px;
+  text-align: center;
+  background: linear-gradient(135deg, #FF6B6B, #4ECDC4, #45B7D1, #FFEAA7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 900px;
+  width: 100%;
+}
+
+.game-card {
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 24px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  transition: transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 160px;
+  text-decoration: none;
+  color: #fff;
+  font-family: inherit;
+}
+
+.game-card:active {
+  transform: scale(0.93);
+}
+
+.game-card-emoji {
+  font-size: 64px;
+  margin-bottom: 12px;
+  line-height: 1;
+}
+
+.game-card-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.card-tap { background: linear-gradient(135deg, #e94560, #c23152); }
+.card-bubbles { background: linear-gradient(135deg, #4ECDC4, #2eb5ad); }
+.card-animals { background: linear-gradient(135deg, #45B7D1, #3a9db5); }
+
+/* Parent-only back button */
+.back-btn {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 20px;
+  z-index: 100;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+/* Parent settings button */
+.settings-btn {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 16px;
+  z-index: 100;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Animal Sounds grid */
+.animal-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  height: 100vh;
+  align-content: center;
+}
+
+.animal-card {
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.3s;
+  touch-action: none;
+}
+
+.animal-card:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.animal-card.playing {
+  animation: wobble 0.5s ease-in-out;
+}
+
+.animal-emoji {
+  font-size: 56px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.animal-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+@keyframes wobble {
+  0%   { transform: scale(1) rotate(0deg); }
+  25%  { transform: scale(1.15) rotate(-5deg); }
+  50%  { transform: scale(1.15) rotate(5deg); }
+  75%  { transform: scale(1.08) rotate(-3deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
